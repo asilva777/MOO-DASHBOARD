@@ -1,0 +1,368 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ormoc City EOC MOO Development</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .tab-button.active {
+            border-bottom: 3px solid #10b981;
+            color: #059669;
+            font-weight: 600;
+        }
+        .content-card { transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- Header -->
+        <header class="bg-white shadow-lg rounded-xl p-4 mb-6">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">
+                Ormoc City EOC Manual of Operations (MOO)
+            </h1>
+            <p class="text-sm text-gray-500">Project Development Workspace</p>
+        </header>
+
+        <!-- Navigation Tabs (Updated to use data-content-id instead of inline onclick) -->
+        <nav class="bg-white p-2 rounded-xl shadow-md flex justify-between sm:justify-start space-x-2 sm:space-x-4 mb-6" id="nav-tabs">
+            <button class="tab-button p-3 text-sm sm:text-base text-gray-600 hover:text-green-600 transition duration-150 active" data-content-id="moo-outline">
+                MOO Content Outline
+            </button>
+            <button class="tab-button p-3 text-sm sm:text-base text-gray-600 hover:text-green-600 transition duration-150" data-content-id="institutional-arrangements">
+                Institutional Arrangements
+            </button>
+            <button class="tab-button p-3 text-sm sm:text-base text-gray-600 hover:text-green-600 transition duration-150" data-content-id="resources">
+                Knowledge Hub & Resources
+            </button>
+        </nav>
+
+        <!-- Content Area -->
+        <main id="content-area" class="space-y-6">
+            <!-- Content will be rendered here by JavaScript -->
+        </main>
+    </div>
+
+    <script type="module">
+        // Global Firebase variables are provided by the Canvas environment.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId;
+        let isAuthReady = false;
+        
+        // Define resource data here (as a placeholder for a Firestore collection)
+        const resourcesData = {
+            standards: [
+                { title: 'RA 10121 (DRRM Act)', description: 'Primary legal basis for establishing the CDRRMO and EOC.', type: 'Link', icon: 'landmark' },
+                { title: 'CSC MC No. 12, s. 2021 (PSCP)', description: 'Mandates Public Service Continuity Planning.', type: 'Link', icon: 'landmark' },
+                { title: 'RA 12287 (Imminent Disaster Act)', description: 'Provides legal basis for declaring a state of imminent disaster, enabling proactive response and evacuation before impact.', type: 'Link', icon: 'landmark' },
+                { title: 'UNDRR Sendai Framework', description: 'Global benchmark for disaster risk reduction.', type: 'Link', icon: 'link' },
+                { title: 'ISO 22301:2019 (Business Continuity)', description: 'Structure for EOC continuity protocols (TOR ref).', type: 'PDF', icon: 'book' },
+            ],
+            assets: [
+                { title: 'Hazard HunterPH 2025 Data', description: 'Latest hazard and risk data for Ormoc City.', type: 'Data', icon: 'server' },
+                { title: 'Ormoc City DRRM Plan', description: 'Previous DRRM Plan (2020-2025) for baseline review.', type: 'Document', icon: 'file-text' },
+            ]
+        };
+
+        const contentArea = document.getElementById('content-area');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const navTabs = document.getElementById('nav-tabs'); // Get the nav container
+
+        // FIX: Update renderIcon to use the correct programmatic method for Lucide icons (.toSvg())
+        function renderIcon(iconName, className = "w-5 h-5") {
+            // Check if the global lucide object and the specific icon exists
+            if (typeof lucide !== 'undefined' && lucide.icons && lucide.icons[iconName]) {
+                // Use toSvg() to generate the SVG string for the icon
+                // We pass the class attribute directly to the SVG element generation
+                return lucide.icons[iconName].toSvg({ class: className });
+            }
+            return '';
+        }
+
+        function setActiveTab(contentId) {
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+                if (button.getAttribute('data-content-id') === contentId) {
+                    button.classList.add('active');
+                }
+            });
+        }
+
+        function renderContent(contentId) {
+            let html = '';
+            setActiveTab(contentId);
+
+            if (contentId === 'moo-outline') {
+                html = renderMOOOutline();
+            } else if (contentId === 'institutional-arrangements') {
+                html = renderInstitutionalArrangements();
+            } else if (contentId === 'resources') {
+                html = renderResources();
+            }
+
+            contentArea.innerHTML = html;
+            // Removed lucide.createIcons() here as we now generate SVGs programmatically in renderIcon
+        }
+
+        function renderMOOOutline() {
+            return `
+                <div class="content-card bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-xl font-bold text-gray-700 mb-4">MOO Content Outline & Progress</h2>
+
+                    <!-- Chapter I: Introduction & Mandate -->
+                    <div class="p-4 border-l-4 border-teal-500 bg-white shadow-md rounded-lg mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Chapter I: Introduction & Mandate</h3>
+                        <p class="text-sm text-gray-600 mt-1">Lays the foundation, scope, and objectives of the MOO.</p>
+                        <ul class="list-disc ml-5 mt-2 text-sm text-gray-700 space-y-1">
+                            <li>1.1 Legal Basis (RA 10121, RA 12287, CSC MC 12, s. 2021)</li>
+                            <li>1.2 Scope and Applicability (EOC, CDRRMO, LGU)</li>
+                            <li>1.3 Goals and Specific Objectives</li>
+                        </ul>
+                    </div>
+
+                    <!-- Chapter II: Institutional Arrangements (UPDATED) -->
+                    <div class="p-4 border-l-4 border-indigo-500 bg-white shadow-md rounded-lg mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Chapter II: Institutional Arrangements (Crucial Update)</h3>
+                        <p class="text-sm text-gray-600 mt-1">Defines the roles, functions, and relationships of all actors within the CDRRM System.</p>
+
+                        <details class="mt-3 p-3 bg-indigo-50 rounded-lg">
+                            <summary class="font-medium cursor-pointer text-indigo-700">2.1 Primary Actors (CDRRM Council, EOC Functional Sections)</summary>
+                            <div class="mt-3 space-y-2 text-sm text-gray-700">
+                                <ul class="list-disc ml-5 space-y-1">
+                                    <li>CDRRMC Structure and Mandates</li>
+                                    <li>EOC Management (Commander, Deputy, PIO)</li>
+                                    <li>Functional Sections: Operations, Plans, Logistics, Finance/Admin</li>
+                                </ul>
+                            </div>
+                        </details>
+                        
+                        <!-- NEW SECTION: 2.2 Secondary/Partner Stakeholders -->
+                        <details open class="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                            <summary class="font-bold cursor-pointer text-indigo-800">2.2 Secondary/Partner Stakeholders (OCD, DILG, CSOs, Private Sector, Vulnerable Groups)</summary>
+                            <div class="mt-3 space-y-4 text-sm text-gray-700">
+                                <h4 class="font-bold text-indigo-800 border-b pb-1">National Government Agencies:</h4>
+                                <ul class="list-disc ml-5 space-y-2">
+                                    <li><strong class="text-blue-600">Office of Civil Defense (OCD):</strong> Provides overall policy guidance, technical assistance, capacity building, and ensures national-to-local coordination. Monitors the MOO's compliance with the NDRRM Framework.</li>
+                                    <li><strong class="text-blue-600">Department of the Interior and Local Government (DILG):</strong> Ensures LGU compliance with DRRM laws (RA 10121, RA 12287) and monitors the functional readiness of the CDRRMC and EOC. Leads capacity development for local chief executives and DRRM officers.</li>
+                                </ul>
+
+                                <h4 class="font-bold text-indigo-800 border-b pb-1">Non-State Actors:</h4>
+                                <ul class="list-disc ml-5 space-y-2">
+                                    <li><strong class="text-blue-600">Civil Society Organizations (CSOs) / NGOs:</strong> Supports community-level preparedness, conducts localized needs assessments, mobilizes volunteers, and provides critical monitoring and feedback on government response efficiency, ensuring services reach the grassroots.</li>
+                                    <li><strong class="text-blue-600">Private Sector:</strong> Contributes resources (e.g., equipment, logistics, communication facilities), supports business continuity for essential services, and participates in recovery/rehabilitation efforts. Designated as critical partners in logistics and supply chain management.</li>
+                                </ul>
+
+                                <h4 class="font-bold text-indigo-800 border-b pb-1">Community & Vulnerable Groups:</h4>
+                                <ul class="list-disc ml-5 space-y-2">
+                                    <li><strong class="text-blue-600">Vulnerable Groups & People's Organizations (POs):</strong> Essential for inclusive DRRM. They ensure planning addresses specific needs (PWDs, elderly, women/children) and participate actively in pre-disaster risk assessment, preemptive evacuation, and post-disaster protection monitoring.</li>
+                                </ul>
+                            </div>
+                        </details>
+                        <!-- End 2.2 Secondary/Partner Stakeholders -->
+                    </div>
+
+                    <!-- Chapter III: Standard Operating Procedures (SOPs) -->
+                    <div class="p-4 border-l-4 border-orange-500 bg-white shadow-md rounded-lg mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Chapter III: Standard Operating Procedures (SOPs)</h3>
+                        <p class="text-sm text-gray-600 mt-1">Detailed, step-by-step procedures for all phases of DRRM.</p>
+                        <ul class="list-disc ml-5 mt-2 text-sm text-gray-700 space-y-1">
+                            <li>3.1 Preparedness and Contingency Planning Protocols</li>
+                            <li>3.2 EOC Activation and Deactivation Criteria</li>
+                            <li>3.3 Response Protocols (by hazard/cluster)</li>
+                            <li>3.4 Transition to Recovery Protocols</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderInstitutionalArrangements() {
+             return `
+                <div class="content-card bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-xl font-bold text-gray-700 mb-4">2. Institutional Arrangements (Detailed View)</h2>
+                    <p class="text-gray-600 mb-6">This section formalizes the coordination structures. It ensures that the Ormoc City EOC is not an isolated unit but the nexus of a comprehensive, multi-sectoral DRRM network, especially during a State of Imminent Disaster (RA 12287).</p>
+                    
+                    <h3 class="text-lg font-semibold text-indigo-700 mb-3 border-b pb-2">Secondary Stakeholders and Partner Roles</h3>
+                    
+                    <div class="space-y-4">
+                        
+                        <!-- OCD Role -->
+                        <div class="bg-indigo-50 p-4 rounded-lg shadow-sm">
+                            <h4 class="flex items-center text-md font-bold text-indigo-800 mb-1">
+                                ${renderIcon('shield-check', 'w-5 h-5 mr-2')} Office of Civil Defense (OCD)
+                            </h4>
+                            <p class="text-sm text-gray-700">
+                                The OCD acts as the primary coordinator for the **National DRRM System**. Its role is to provide the legal and operational umbrella, ensuring the MOO aligns with national standards and protocols. Specifically, the OCD provides **technical guidance**, conducts **capacity building**, and serves as the **link to national resources** and inter-regional assistance.
+                            </p>
+                        </div>
+
+                        <!-- DILG Role -->
+                        <div class="bg-indigo-50 p-4 rounded-lg shadow-sm">
+                            <h4 class="flex items-center text-md font-bold text-indigo-800 mb-1">
+                                ${renderIcon('layout-dashboard', 'w-5 h-5 mr-2')} Department of the Interior and Local Government (DILG)
+                            </h4>
+                            <p class="text-sm text-gray-700">
+                                The DILG's mandate is **oversight and compliance**. It ensures that the LGU (Ormoc City) is fully compliant with DRRM laws (RA 10121, RA 12287) and that the CDRRMC and EOC are **functionally operational**. The DILG is critical for **monitoring local readiness** and ensuring accountability among local officials regarding disaster preparedness and response duties.
+                            </p>
+                        </div>
+
+                        <!-- CSOs Role -->
+                        <div class="bg-indigo-50 p-4 rounded-lg shadow-sm">
+                            <h4 class="flex items-center text-md font-bold text-indigo-800 mb-1">
+                                ${renderIcon('users', 'w-5 h-5 mr-2')} Civil Society Organizations (CSOs) / NGOs
+                            </h4>
+                            <p class="text-sm text-gray-700">
+                                CSOs are vital for **grassroots mobilization** and providing an independent perspective. They assist the EOC by conducting **localized rapid needs assessments**, mobilizing and managing **community volunteers**, and ensuring **critical services** reach the most isolated communities. They also serve as important feedback mechanisms for protection and service delivery.
+                            </p>
+                        </div>
+
+                        <!-- Private Sector Role -->
+                        <div class="bg-indigo-50 p-4 rounded-lg shadow-sm">
+                            <h4 class="flex items-center text-md font-bold text-indigo-800 mb-1">
+                                ${renderIcon('briefcase', 'w-5 h-5 mr-2')} Private Sector
+                            </h4>
+                            <p class="text-sm text-gray-700">
+                                The private sector is key to **logistics, supply chain, and critical facility support**. Their roles include providing **emergency transport**, ensuring the continuity of **lifeline services** (power, water, communication), donating or lending heavy equipment, and integrating their business continuity plans with the city's overall response strategy.
+                            </p>
+                        </div>
+
+                        <!-- Vulnerable Groups Role -->
+                        <div class="bg-indigo-50 p-4 rounded-lg shadow-sm">
+                            <h4 class="flex items-center text-md font-bold text-indigo-800 mb-1">
+                                ${renderIcon('person-standing', 'w-5 h-5 mr-2')} Vulnerable Groups & People's Organizations (POs)
+                            </h4>
+                            <p class="text-sm text-gray-700">
+                                Inclusion is paramount. This group ensures that the response is **disability-inclusive, gender-sensitive, and addresses the needs of the most marginalized**. They are crucial participants in **Pre-Disaster Risk Assessment (PDRA)** and provide the EOC with immediate, specific data on protection issues and specialized evacuation/shelter needs.
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            `;
+        }
+
+
+        function renderResources() {
+            let standardsHtml = resourcesData.standards.map(item => `
+                <li class="flex items-start p-3 bg-green-50 rounded-lg">
+                    <span class="text-green-600 mr-3 mt-1">${renderIcon(item.icon, 'w-4 h-4')}</span>
+                    <div>
+                        <p class="font-semibold text-gray-800">${item.title} <span class="text-xs font-normal text-green-700 ml-1">(${item.type})</span></p>
+                        <p class="text-xs text-gray-600">${item.description}</p>
+                    </div>
+                </li>
+            `).join('');
+
+            let assetsHtml = resourcesData.assets.map(item => `
+                <li class="flex items-start p-3 bg-yellow-50 rounded-lg">
+                    <span class="text-yellow-600 mr-3 mt-1">${renderIcon(item.icon, 'w-4 h-4')}</span>
+                    <div>
+                        <p class="font-semibold text-gray-800">${item.title} <span class="text-xs font-normal text-yellow-700 ml-1">(${item.type})</span></p>
+                        <p class="text-xs text-gray-600">${item.description}</p>
+                    </div>
+                </li>
+            `).join('');
+
+            return `
+                <div class="content-card bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-xl font-bold text-gray-700 mb-4">Knowledge Hub & Key Resources</h2>
+                    <p class="text-gray-600 mb-6">These documents and mandates serve as the primary inputs and references for developing the MOO.</p>
+
+                    <div class="space-y-6">
+                        <section>
+                            <h3 class="text-lg font-semibold text-teal-700 mb-3 flex items-center">
+                                ${renderIcon('gavel', 'w-5 h-5 mr-2')} National Standards & Policies
+                            </h3>
+                            <ul class="space-y-2">
+                                ${standardsHtml}
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h3 class="text-lg font-semibold text-amber-700 mb-3 flex items-center">
+                                ${renderIcon('hard-drive', 'w-5 h-5 mr-2')} Local Assets & Baseline Data
+                            </h3>
+                            <ul class="space-y-2">
+                                ${assetsHtml}
+                            </ul>
+                        </section>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Refactored Firebase Initialization (Fixes SyntaxError)
+        async function initFirebase() {
+            if (!firebaseConfig) {
+                console.warn("Firebase config not available. Running in standalone mode.");
+                userId = crypto.randomUUID(); // Fallback ID
+                isAuthReady = true;
+                return;
+            }
+
+            try {
+                // Use dynamic imports to load modules conditionally (fixes the SyntaxError)
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+                const { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+                const { getFirestore, setLogLevel } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug'); // Set logging level
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                    } else {
+                        userId = crypto.randomUUID();
+                    }
+                    isAuthReady = true;
+                });
+
+                // Attempt sign in with custom token or anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+            } catch (error) {
+                console.error("Firebase initialization or authentication failed:", error);
+                userId = crypto.randomUUID();
+                isAuthReady = true;
+            }
+        }
+
+
+        // Initial render on load (Includes event listeners to fix ReferenceError)
+        document.addEventListener('DOMContentLoaded', () => {
+            // Attach event listeners to buttons (Fixes ReferenceError: showContent is not defined)
+            navTabs.addEventListener('click', (event) => {
+                const button = event.target.closest('.tab-button');
+                const contentId = button ? button.getAttribute('data-content-id') : null;
+                if (contentId) {
+                    renderContent(contentId);
+                }
+            });
+
+            // Initial content render
+            renderContent('moo-outline');
+            // No need for lucide.createIcons() here anymore as renderIcon handles SVG generation
+
+            // Initialize Firebase
+            initFirebase();
+        });
+
+
+    </script>
+</body>
+</html>
