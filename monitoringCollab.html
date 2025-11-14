@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MOO Project Dashboard — Ormoc City</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green: #10B981;
+      --blue: #3B82F6;
+      --red: #EF4444;
+      --amber: #F59E0B;
+      --gray: #9CA3AF;
+      --light-gray: #F3F4F6;
+      --dark: #1F2937;
+      --white: #FFFFFF;
+      --border: #E5E7EB;
+      --nav-bg: #1F2937;
+      --nav-text: #FFFFFF;
+      --active-tab: #3B82F6;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #F9FAFB;
+      color: var(--dark);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      flex: 1;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+    header p {
+      font-size: 14px;
+      color: #6B7280;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .panel {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .top-panel {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .metric-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+    .metric-title {
+      font-size: 12px;
+      color: #6B7280;
+      margin-bottom: 8px;
+    }
+    .metric-value {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .gauge-container {
+      width: 100px;
+      height: 60px;
+      margin: 0 auto 8px;
+    }
+    .rag-indicator {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      margin-top: 4px;
+    }
+    .rag-green { background-color: var(--green); }
+    .rag-amber { background-color: var(--amber); }
+    .rag-red { background-color: var(--red); }
+    .milestone-callout {
+      background: #EFF6FF;
+      border-left: 4px solid var(--blue);
+      padding: 12px;
+      text-align: left;
+      font-size: 14px;
+    }
+    .gantt-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .gantt-table th {
+      background-color: var(--light-gray);
+      padding: 10px;
+      text-align: left;
+      font-weight: 600;
+    }
+    .gantt-table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .task-status {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .status-completed { background-color: var(--green); }
+    .status-inprogress { background-color: var(--blue); }
+    .status-upcoming { background-color: var(--gray); }
+    .status-overdue { background-color: var(--red); }
+    .progress-bar {
+      height: 8px;
+      background-color: #E5E7EB;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .progress-fill {
+      height: 100%;
+      background-color: var(--blue);
+    }
+    .team-performance {
+      height: 200px;
+    }
+    .deliverable-list {
+      list-style: none;
+    }
+    .deliverable-item {
+      margin-bottom: 12px;
+    }
+    .deliverable-title {
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .meeting-note {
+      font-size: 13px;
+      color: #4B5563;
+      margin-top: 16px;
+    }
+    .meeting-note a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      background-color: var(--nav-bg);
+      padding: 12px 0;
+      margin-top: auto;
+    }
+    .nav-tab {
+      padding: 10px 20px;
+      color: var(--nav-text);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border-bottom: 3px solid transparent;
+    }
+    .nav-tab:hover, .nav-tab.active {
+      color: var(--white);
+      border-bottom: 3px solid var(--active-tab);
+    }
+    /* Page Content */
+    .page {
+      display: none;
+      padding: 20px;
+      background-color: var(--white);
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+    }
+    .page.active {
+      display: block;
+    }
+    .approach-flow {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .approach-box {
+      background: #DBEAFE;
+      border: 2px solid #3B82F6;
+      padding: 16px;
+      border-radius: 8px;
+      flex: 1 1 200px;
+      min-width: 250px;
+    }
+    .approach-box h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #1D4ED8;
+    }
+    .m&e-flow {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .m&e-step {
+      background: #F3F4F6;
+      border: 2px solid #6B7280;
+      padding: 16px;
+      border-radius: 8px;
+      flex: 1 1 200px;
+      min-width: 200px;
+      text-align: center;
+    }
+    .m&e-step h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #1F2937;
+    }
+    .m&e-step .box {
+      background: white;
+      border: 1px solid #D1D5DB;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 12px;
+    }
+    .flow-arrow {
+      font-size: 24px;
+      color: #6B7280;
+      align-self: center;
+    }
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .top-panel {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .approach-flow {
+        flex-direction: column;
+      }
+      .m&e-flow {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Monitoring & Collaboration Dashboard</h1>
+      <p>Development of the Manual of Operations for the EOC & CDRRMO — Ormoc City</p>
+    </header>
+
+    <!-- Section 1: Executive Summary -->
+    <div class="top-panel">
+      <!-- Overall Progress -->
+      <div class="metric-card">
+        <div class="metric-title">Overall Progress</div>
+        <div class="gauge-container">
+          <canvas id="gaugeChart"></canvas>
+        </div>
+        <div class="metric-value">40%</div>
+      </div>
+
+      <!-- Timeline Status -->
+      <div class="metric-card">
+        <div class="metric-title">Timeline Status</div>
+        <div class="rag-indicator rag-amber"></div>
+        <div class="metric-value">At Risk</div>
+      </div>
+
+      <!-- Budget Utilized -->
+      <div class="metric-card">
+        <div class="metric-title">Budget Utilized</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 40%"></div>
+        </div>
+        <div class="metric-value">PHP 237,700 / 598,500</div>
+      </div>
+
+      <!-- Next Major Milestone -->
+      <div class="metric-card">
+        <div class="metric-title">Next Major Milestone</div>
+        <div class="milestone-callout">
+          <strong>Draft MOO Submission</strong><br/>
+          Due: January 4, 2026<br/>
+          (Progress Billing 2)
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid">
+      <!-- Section 2: Gantt Chart Table -->
+      <div class="panel">
+        <h2 class="section-title">Phase & Milestone Tracker</h2>
+        <table class="gantt-table">
+          <thead>
+            <tr>
+              <th>WBS</th>
+              <th>Task</th>
+              <th>Owner</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>% Complete</th>
+            </tr>
+          </thead>
+          <tbody id="ganttBody">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section 3: Team & Collaboration -->
+      <div class="panel">
+        <h2 class="section-title">Team Accountability</h2>
+        <div class="team-performance">
+          <canvas id="teamChart"></canvas>
+        </div>
+
+        <h3 class="section-title" style="margin-top: 20px;">Key Deliverables</h3>
+        <ul class="deliverable-list" id="deliverableList">
+          <!-- Populated by JS -->
+        </ul>
+
+        <div class="meeting-note">
+          <strong>Last Coordination Meeting:</strong><br/>
+          <a href="https://docs.google.com/document/d/example" target="_blank">Nov 14, 2025</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Approach and M&E Framework Pages -->
+    <div id="approachPage" class="page">
+      <h2 class="section-title">Approach to MOO Development</h2>
+      <div class="approach-flow">
+        <div class="approach-box">
+          <h3>RELEVANCE AND RESILIENCE</h3>
+          <p>Rooted in Ormoc City’s DRRM and PSCP priorities</p>
+          <p>Aligns deoroc Ormoc City’s CDP and LDRM</p>
+        </div>
+        <div class="approach-box">
+          <h3>EFFECTIVENESS AND EFFICIENCY</h3>
+          <p>Built on clear procedures, measurable outputs, and real-world validation</p>
+        </div>
+        <div class="approach-box">
+          <h3>SUSTAINABILITY AND LOCAL OWNERSHIP</h3>
+          <p>Embeds continuous-improvement, local ownership, and PSCP integration</p>
+        </div>
+        <div class="approach-box">
+          <h3>INNOVATION AND INTEGRATION</h3>
+          <p>Introduces data-driven governance, digital continuity, and community-based feedback</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="m&ePage" class="page">
+      <h2 class="section-title">Monitoring & Evaluation Framework</h2>
+      <div class="m&e-flow">
+        <div class="m&e-step">
+          <h3>PURPOSE</h3>
+          <div class="box">Assess the effectiveness of the Manual of Operations</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="m&e-step">
+          <h3>KEY RESULTS AREAS</h3>
+          <div class="box">
+            • Timeliness<br/>
+            • Quality<br/>
+            • Stakeholder engagement
+          </div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="m&e-step">
+          <h3>INDICATORS</h3>
+          <div class="box">
+            Timely completion of deliverables<br/>
+            Quality and usability of the Manual<br/>
+            Degree of stakeholder participation and satisfaction
+          </div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="m&e-step">
+          <h3>M&E METHODS</h3>
+          <div class="box">
+            Progress reports<br/>
+            Validation workshops<br/>
+            Surveys and interviews
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <a href="#" class="nav-tab active" data-page="dashboard">Dashboard</a>
+    <a href="#" class="nav-tab" data-page="gantt">Phase & Milestone Tracker</a>
+    <a href="#" class="nav-tab" data-page="deliverables">Key Deliverables</a>
+    <a href="#" class="nav-tab" data-page="approach">MOO Approach</a>
+    <a href="#" class="nav-tab" data-page="m&e">M&E Framework</a>
+  </div>
+
+  <script>
+    // Mock data from proposal
+    const currentDate = new Date('2025-11-15');
+    const tasks = [
+      { wbs: "1.1", task: "Inception and Mobilization", owner: "Alvin M. Silva", due: "2025-11-02", complete: 100 },
+      { wbs: "1.2", task: "Stakeholder Coordination", owner: "Alvin M. Silva", due: "2025-11-02", complete: 100 },
+      { wbs: "1.3", task: "Inception Report Preparation", owner: "Alvin M. Silva", due: "2025-11-02", complete: 100 },
+      { wbs: "2.1", task: "Situational & Institutional Assessment", owner: "Research Lead", due: "2025-11-16", complete: 30 },
+      { wbs: "2.2", task: "Data Collection and Analysis", owner: "Research Lead", due: "2025-11-14", complete: 20 },
+      { wbs: "2.3", task: "Situational Analysis Report", owner: "Research Lead", due: "2025-11-16", complete: 0 },
+      { wbs: "3.1", task: "Manual Development (Drafting)", owner: "Veronica Mae L. Adorza", due: "2026-01-04", complete: 0 },
+      { wbs: "3.2", task: "Draft Manual Submission", owner: "Veronica Mae L. Adorza", due: "2026-01-04", complete: 0 },
+      { wbs: "4.2", task: "Validation Workshop", owner: "Facilitation Lead", due: "2026-01-18", complete: 0 },
+      { wbs: "5.5", task: "Turnover and Close-out Ceremony", owner: "CDRRMO", due: "2026-02-09", complete: 0 }
+    ];
+
+    const deliverables = [
+      { name: "Inception Report", due: "2025-11-02", status: "Completed", owner: "Alvin" },
+      { name: "Situational Analysis Report", due: "2025-11-16", status: "In Progress", owner: "Research Lead" },
+      { name: "Draft Manual of Operations", due: "2026-01-04", status: "Not Started", owner: "Veronica" },
+      { name: "Final Manual of Operations", due: "2026-02-09", status: "Not Started", owner: "Team" }
+    ];
+
+    // Render Gantt Table
+    const ganttBody = document.getElementById('ganttBody');
+    tasks.forEach(t => {
+      const dueDate = new Date(t.due);
+      let statusClass = 'status-upcoming';
+      if (t.complete === 100) {
+        statusClass = 'status-completed';
+      } else if (dueDate < currentDate) {
+        statusClass = 'status-overdue';
+      } else if (t.complete > 0) {
+        statusClass = 'status-inprogress';
+      }
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${t.wbs}</td>
+        <td>${t.task}</td>
+        <td>${t.owner}</td>
+        <td>${t.due}</td>
+        <td><span class="task-status ${statusClass}"></span></td>
+        <td>${t.complete}%</td>
+      `;
+      ganttBody.appendChild(row);
+    });
+
+    // Gauge Chart (Overall Progress)
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(t => t.complete === 100).length;
+    const overallProgress = Math.round((completedTasks / totalTasks) * 100);
+
+    const gaugeCtx = document.getElementById('gaugeChart').getContext('2d');
+    new Chart(gaugeCtx, {
+      type: 'doughnut',
+       {
+        labels: ['Complete', 'Remaining'],
+        datasets: [{
+           [overallProgress, 100 - overallProgress],
+          backgroundColor: [overallProgress >= 80 ? '#10B981' : overallProgress >= 50 ? '#3B82F6' : '#EF4444', '#E5E7EB'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        cutout: '70%',
+        rotation: -90,
+        circumference: 180,
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+
+    // Team Performance Chart
+    const owners = [...new Set(tasks.map(t => t.owner))];
+    const teamData = owners.map(owner => {
+      const ownerTasks = tasks.filter(t => t.owner === owner);
+      return {
+        completed: ownerTasks.filter(t => t.complete === 100).length,
+        inProgress: ownerTasks.filter(t => t.complete > 0 && t.complete < 100).length,
+        overdue: ownerTasks.filter(t => t.complete < 100 && new Date(t.due) < currentDate).length
+      };
+    });
+
+    const teamCtx = document.getElementById('teamChart').getContext('2d');
+    new Chart(teamCtx, {
+      type: 'bar',
+       {
+        labels: owners,
+        datasets: [
+          {
+            label: 'Completed',
+             teamData.map(d => d.completed),
+            backgroundColor: '#10B981'
+          },
+          {
+            label: 'In Progress',
+             teamData.map(d => d.inProgress),
+            backgroundColor: '#3B82F6'
+          },
+          {
+            label: 'Overdue',
+             teamData.map(d => d.overdue),
+            backgroundColor: '#EF4444'
+          }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: {
+          legend: { position: 'top' }
+        },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true }
+        }
+      }
+    });
+
+    // Deliverables List
+    const deliverableList = document.getElementById('deliverableList');
+    deliverables.forEach(d => {
+      let barColor = '#E5E7EB';
+      if (d.status === 'Completed') barColor = '#10B981';
+      else if (d.status === 'In Progress') barColor = '#3B82F6';
+
+      const li = document.createElement('li');
+      li.className = 'deliverable-item';
+      li.innerHTML = `
+        <div class="deliverable-title">${d.name}</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${d.status === 'Completed' ? 100 : d.status === 'In Progress' ? 50 : 0}%"></div>
+        </div>
+        <div style="font-size:12px; color:#6B7280; margin-top:2px;">${d.owner} • Due: ${d.due}</div>
+      `;
+      deliverableList.appendChild(li);
+    });
+
+    // Navigation Tab Functionality
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        const pageId = this.getAttribute('data-page');
+        
+        // Hide all pages
+        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        
+        // Show selected page
+        if (pageId === 'dashboard') {
+          // Dashboard is always visible as main content
+          document.querySelector('.container').style.display = 'block';
+        } else {
+          document.getElementById(pageId + 'Page').classList.add('active');
+          document.querySelector('.container').style.display = 'none';
+        }
+        
+        // Activate tab
+        this.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
