@@ -1,11 +1,67 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Clock, Briefcase, DollarSign, Users, Target, CheckCircle, AlertTriangle, XCircle, ChevronDown, ChevronUp, Calendar, BookOpen, Link, Zap, TrendingUp, Handshake, Cpu, ZapOff } from 'lucide-react';
-// We assume Tailwind CSS is configured in the environment (e.g., via PostCSS in a CRA setup)
+import { Clock, Briefcase, DollarSign, Users, Target, CheckCircle, AlertTriangle, XCircle, ChevronDown, ChevronUp, Calendar, BookOpen, Link, Zap, TrendingUp, Handshake, Cpu, ZapOff, LucideIcon } from 'lucide-react';
+// Tailwind CSS is assumed to be configured via postcss/tailwind.config.js for Vite
 
-// --- 1. Project Data (JSON Structure Extracted and Updated) ---
+// --- 1. Type Definitions ---
 
-// Removed FINANCALS section as requested.
-const PROJECT_DATA = {
+// Define a type for the dynamic icons
+interface IconComponentProps {
+    icon: LucideIcon;
+    title: string;
+    value: number | string;
+    unit?: string;
+    colorClass?: string;
+    textClass?: string;
+}
+
+interface Milestone {
+    wbs: string;
+    title: string;
+    owner: string;
+    dueDate: string;
+    status: 'Completed' | 'In Progress' | 'Pending' | 'Delayed';
+}
+
+interface TeamMember {
+    name: string;
+    role: string;
+    expertise: string[];
+    contact: string;
+    cvSnippet: string;
+}
+
+interface KnowledgeItem {
+    title: string;
+    url: string;
+    icon: LucideIcon;
+    color: string;
+    description?: string;
+}
+
+interface Principle {
+    icon: LucideIcon;
+    description: string;
+    wbs: string[];
+}
+
+interface ProjectData {
+    PROJECT_INFO: {
+        title: string;
+        proponent: string;
+        client: string;
+        startDate: Date;
+        dueDate: Date;
+        totalDurationDays: number;
+    };
+    MILESTONES: Milestone[];
+    TEAM: TeamMember[];
+    KNOWLEDGE_HUB: KnowledgeItem[];
+    PRINCIPLES_MAPPING: { [key: string]: Principle };
+}
+
+// --- 2. Project Data (JSON Structure Extracted and Updated) ---
+
+const PROJECT_DATA: ProjectData = {
     PROJECT_INFO: {
         title: "Development of the MOO for Ormoc City EOC and CDRRMO",
         proponent: "Alvin M. Silva (Lead Consultant)",
@@ -14,7 +70,6 @@ const PROJECT_DATA = {
         dueDate: new Date('2026-02-09'), // Final Turnover Date
         totalDurationDays: 107, // Oct 26 to Feb 9
     },
-    // Updated MILESTONES to be more comprehensive based on the Gantt Chart
     MILESTONES: [
         // Phase 1: Inception and Mobilization (Completed)
         { wbs: '1.1', title: 'Inception and Mobilization', owner: 'Consultant Team Lead', dueDate: '2025-11-02', status: 'Completed' },
@@ -57,7 +112,6 @@ const PROJECT_DATA = {
         { title: "Technical Proposal", url: "#", icon: Briefcase, color: "text-indigo-600", description: "Outlines the methodology, approach, and team qualifications." },
         { title: "Gantt Chart (Timeline)", url: "#", icon: Calendar, color: "text-indigo-600", description: "Detailed work breakdown structure (WBS) and timeline." },
     ],
-    // NEW: Mapping WBS tasks to Value Creation Principles (Based on document analysis)
     PRINCIPLES_MAPPING: {
         "Relevance and Resilience": {
             icon: Target,
@@ -82,9 +136,9 @@ const PROJECT_DATA = {
     }
 };
 
-// --- 2. Utility Components ---
+// --- 3. Utility Components ---
 
-const Card = ({ icon: Icon, title, value, unit, colorClass = "bg-indigo-700", textClass = "text-indigo-700" }) => (
+const Card: React.FC<IconComponentProps> = ({ icon: Icon, title, value, unit, colorClass = "bg-indigo-700", textClass = "text-indigo-700" }) => (
     <div className="flex items-center p-4 bg-white rounded-xl shadow-lg transition duration-300 hover:shadow-xl border border-gray-100">
         <div className={`p-3 rounded-full ${colorClass} bg-opacity-10 mr-4`}>
             <Icon className={`w-6 h-6 ${textClass}`} />
@@ -99,8 +153,7 @@ const Card = ({ icon: Icon, title, value, unit, colorClass = "bg-indigo-700", te
     </div>
 );
 
-// TimelineItem is slightly simplified as it no longer links to Financials
-const TimelineItem = ({ wbs, title, owner, dueDate, status }) => {
+const TimelineItem: React.FC<Milestone> = ({ wbs, title, owner, dueDate, status }) => {
     const statusMap = {
         "Completed": { icon: CheckCircle, color: "text-green-600", bg: "bg-green-100", border: "border-green-600" },
         "In Progress": { icon: Clock, color: "text-yellow-600", bg: "bg-yellow-100", border: "border-yellow-600" },
@@ -139,15 +192,15 @@ const TimelineItem = ({ wbs, title, owner, dueDate, status }) => {
 };
 
 
-// --- 3. Main Views (Tabs) ---
+// --- 4. Main Views (Tabs) ---
 
-const OverviewTab = () => {
+const OverviewTab: React.FC = () => {
     const { PROJECT_INFO, MILESTONES } = PROJECT_DATA; 
     const today = useMemo(() => new Date(), []);
     
     // Calculate progress and time metrics
     const totalDuration = PROJECT_INFO.totalDurationDays;
-    const timeElapsed = useMemo(() => Math.floor((today - PROJECT_INFO.startDate) / (1000 * 60 * 60 * 24)), [today, PROJECT_INFO.startDate]);
+    const timeElapsed = useMemo(() => Math.floor((today.getTime() - PROJECT_INFO.startDate.getTime()) / (1000 * 60 * 60 * 24)), [today, PROJECT_INFO.startDate]);
     const progressPercent = Math.min(100, Math.floor((timeElapsed / totalDuration) * 100));
     
     const completedTasks = MILESTONES.filter(m => m.status === 'Completed').length;
@@ -170,14 +223,13 @@ const OverviewTab = () => {
             
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {/* Time Progress Card - Navy Blue Accent */}
                 <Card 
                     icon={Calendar} 
                     title="Time Progress" 
                     value={progressPercent} 
                     unit="%" 
-                    colorClass="bg-indigo-700" // Navy Blue
-                    textClass="text-indigo-700" // Navy Blue
+                    colorClass="bg-indigo-700" 
+                    textClass="text-indigo-700" 
                 />
                 <Card 
                     icon={Target} 
@@ -210,7 +262,7 @@ const OverviewTab = () => {
                 <h3 className="text-xl font-semibold mb-3 text-gray-800">Timeline Snapshot (WBS)</h3>
                 <div className="h-3 w-full bg-gray-200 rounded-full mb-6">
                     <div 
-                        className="h-3 bg-indigo-600 rounded-full transition-all duration-1000" // Navy Accent for Progress
+                        className="h-3 bg-indigo-600 rounded-full transition-all duration-1000" 
                         style={{ width: `${progressPercent}%` }}
                     ></div>
                 </div>
@@ -220,10 +272,10 @@ const OverviewTab = () => {
     );
 };
 
-const PrinciplesTab = () => {
+const PrinciplesTab: React.FC = () => {
     const { MILESTONES, PRINCIPLES_MAPPING } = PROJECT_DATA;
 
-    const calculatePrincipleProgress = useCallback((wbsList) => {
+    const calculatePrincipleProgress = useCallback((wbsList: string[]) => {
         const total = wbsList.length;
         if (total === 0) return { progress: 0, completed: 0, total };
 
@@ -238,7 +290,7 @@ const PrinciplesTab = () => {
         };
     }, [MILESTONES]);
 
-    const getTaskDetails = useCallback((wbsId) => {
+    const getTaskDetails = useCallback((wbsId: string) => {
         return MILESTONES.find(m => m.wbs === wbsId);
     }, [MILESTONES]);
 
@@ -252,11 +304,11 @@ const PrinciplesTab = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {Object.entries(PRINCIPLES_MAPPING).map(([principle, data]) => {
-                    const { icon: Icon, description, wbs } = data;
-                    const { progress, completed, total } = calculatePrincipleProgress(wbs);
+                    const Icon = data.icon;
+                    const { progress, completed, total } = calculatePrincipleProgress(data.wbs);
                     
-                    const principleColor = 'text-indigo-700'; // Navy Blue for Principle Headers
-                    const barColor = 'bg-indigo-600'; // Navy Blue for Progress Bars
+                    const principleColor = 'text-indigo-700'; 
+                    const barColor = 'bg-indigo-600'; 
 
                     return (
                         <div key={principle} className="bg-white p-6 rounded-xl shadow-lg border border-indigo-200">
@@ -265,7 +317,7 @@ const PrinciplesTab = () => {
                                 <h3 className={`text-xl font-bold ${principleColor}`}>{principle}</h3>
                             </div>
                             
-                            <p className="text-sm text-gray-600 mb-4">{description}</p>
+                            <p className="text-sm text-gray-600 mb-4">{data.description}</p>
                             
                             {/* Progress Visualization */}
                             <div className="mb-4">
@@ -285,12 +337,12 @@ const PrinciplesTab = () => {
                             <div className="mt-4">
                                 <h4 className="text-sm font-semibold uppercase text-gray-500 mb-2 border-t pt-2">Contributing Activities:</h4>
                                 <ul className="space-y-2 text-sm">
-                                    {wbs.map(wbsId => {
+                                    {data.wbs.map(wbsId => {
                                         const task = getTaskDetails(wbsId);
                                         if (!task) return null;
                                         
                                         const isCompleted = task.status === 'Completed';
-                                        const statusClass = isCompleted ? 'text-green-600' : 'text-indigo-600'; // Navy Accent for pending/in progress
+                                        const statusClass = isCompleted ? 'text-green-600' : 'text-indigo-600'; 
                                         
                                         return (
                                             <li key={wbsId} className="flex items-start">
@@ -312,16 +364,16 @@ const PrinciplesTab = () => {
     );
 }
 
-const TeamAndTORTab = () => {
+const TeamAndTORTab: React.FC = () => {
     const { TEAM, KNOWLEDGE_HUB } = PROJECT_DATA;
     return (
         <div className="space-y-8">
             <h2 className="text-2xl font-extrabold text-gray-900 border-b pb-2 mb-4">Team and Institutional Mandate</h2>
 
             {/* Knowledge Hub / Collaboration Links */}
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-indigo-200"> {/* Navy Accent Border */}
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-indigo-200"> 
                 <h3 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-                    <Zap className="w-6 h-6 mr-2 text-indigo-600" /> {/* Navy Accent Icon */}
+                    <Zap className="w-6 h-6 mr-2 text-indigo-600" /> 
                     Knowledge Hub & Collaboration Links
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -339,16 +391,16 @@ const TeamAndTORTab = () => {
                             >
                                 <Icon className={`w-5 h-5 mr-3 ${item.color}`} />
                                 <div>
-                                    <p className="font-semibold text-gray-800 group-hover:text-indigo-700">{item.title}</p> {/* Navy Accent Hover */}
+                                    <p className="font-semibold text-gray-800 group-hover:text-indigo-700">{item.title}</p> 
                                     {item.description && <p className="text-xs text-gray-500">{item.description}</p>}
                                 </div>
-                                {isExternal && <Link className="w-4 h-4 ml-auto text-gray-400 group-hover:text-indigo-500" />} {/* Navy Accent Hover */}
+                                {isExternal && <Link className="w-4 h-4 ml-auto text-gray-400 group-hover:text-indigo-500" />} 
                             </a>
                         );
                     })}
                 </div>
-                <p className="mt-4 text-sm text-gray-600 bg-indigo-50 p-3 rounded-lg flex items-center"> {/* Navy Accent Background */}
-                    <AlertTriangle className="w-5 h-5 mr-2 text-indigo-500" /> {/* Navy Accent Icon */}
+                <p className="mt-4 text-sm text-gray-600 bg-indigo-50 p-3 rounded-lg flex items-center"> 
+                    <AlertTriangle className="w-5 h-5 mr-2 text-indigo-500" /> 
                     Note: Document links are placeholders and must be uploaded/linked by the user.
                 </p>
             </div>
@@ -358,14 +410,14 @@ const TeamAndTORTab = () => {
             <h3 className="text-xl font-semibold text-gray-800 mt-6 border-b pb-2">Consultant Team</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {TEAM.map((member, index) => (
-                    <div key={index} className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-700"> {/* Navy Accent Border */}
+                    <div key={index} className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-700"> 
                         <div className="flex items-center mb-3">
-                            <span className="p-3 bg-indigo-100 rounded-full"> {/* Navy Accent Background */}
-                                <Users className="w-6 h-6 text-indigo-700" /> {/* Navy Blue Icon */}
+                            <span className="p-3 bg-indigo-100 rounded-full"> 
+                                <Users className="w-6 h-6 text-indigo-700" /> 
                             </span>
                             <div className="ml-4">
                                 <h4 className="text-lg font-bold text-gray-900">{member.name}</h4>
-                                <p className="text-sm font-medium text-indigo-600">{member.role}</p> {/* Navy Blue Text */}
+                                <p className="text-sm font-medium text-indigo-600">{member.role}</p> 
                             </div>
                         </div>
                         
@@ -389,14 +441,14 @@ const TeamAndTORTab = () => {
 };
 
 
-// --- 4. Main Application Component ---
+// --- 5. Main Application Component ---
 
-const App = () => {
+const App: React.FC = () => {
     // State to manage the currently active tab
-    const [activeTab, setActiveTab] = useState('Overview'); 
+    const [activeTab, setActiveTab] = useState<string>('Overview'); 
 
     // Render the active tab content
-    const renderContent = () => {
+    const renderContent = (): JSX.Element => {
         switch (activeTab) {
             case 'Overview':
                 return <OverviewTab />;
@@ -410,9 +462,9 @@ const App = () => {
     };
 
     // Tab button configuration
-    const tabs = [
+    const tabs: { key: string, label: string, icon: LucideIcon }[] = [
         { key: 'Overview', label: 'Project Gantt & Overview', icon: Clock },
-        { key: 'Principles', label: 'Value Creation Principles', icon: Cpu }, // New Tab
+        { key: 'Principles', label: 'Value Creation Principles', icon: Cpu }, 
         { key: 'Team & TOR', label: 'Team & Collaboration', icon: Briefcase },
     ];
 
@@ -420,8 +472,8 @@ const App = () => {
         <div className="min-h-screen bg-gray-50 p-4 md:p-8">
             {/* Header and Title Block */}
             <header className="max-w-7xl mx-auto mb-8 p-6 bg-white rounded-2xl shadow-xl">
-                <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-700 mb-1 flex items-center"> {/* Navy Blue Title */}
-                    <Target className="w-8 h-8 mr-3 text-indigo-500" /> {/* Navy Blue Icon */}
+                <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-700 mb-1 flex items-center"> 
+                    <Target className="w-8 h-8 mr-3 text-indigo-500" /> 
                     Ormoc City DRRM Project Dashboard
                 </h1>
                 <p className="text-xl text-gray-600 font-medium">{PROJECT_DATA.PROJECT_INFO.title}</p>
@@ -455,7 +507,7 @@ const App = () => {
                                 onClick={() => setActiveTab(tab.key)}
                                 className={`flex items-center px-4 py-2 rounded-full font-semibold transition-all duration-300 shadow-md min-w-max 
                                     ${isActive 
-                                        ? 'bg-indigo-700 text-white shadow-indigo-300/50' // Navy Blue Button Background and Shadow
+                                        ? 'bg-indigo-700 text-white shadow-indigo-300/50' 
                                         : 'bg-white text-gray-700 hover:bg-gray-100'
                                     }`
                                 }
